@@ -1,0 +1,67 @@
+# ==============================================================================
+# Doosan Robot Vision-Guided Control Configuration
+# ==============================================================================
+# 이 파일은 doosan_python 파이프라인의 핵심 설정 파일입니다.
+# 각 항목이 어떤 파이썬 파일의 어떤 모듈/클래스에서 참조되는지 함께 명시되어 있습니다.
+# 상세 문서는 docs/CONFIG_GUIDE.md 를 참고하세요.
+# ==============================================================================
+
+robot:
+  # [참조: src/doosan_python/control/robot.py -> DoosanRobot.__init__]
+  # 두산 제어기 IP 주소 (실물 로봇: 192.168.137.100 / 가상 시뮬레이터: 127.0.0.1)
+  ip: "192.168.137.100"
+
+  # [참조: src/doosan_python/control/robot.py -> DoosanRobot.__init__]
+  # 제어 포트 번호
+  port: 12345
+
+  # [참조: src/doosan_python/control/robot.py -> DoosanRobot.__init__]
+  # ROS 2 서비스 네임스페이스 접두어
+  service_prefix: "/dsr_controller2"
+
+  # [참조: src/doosan_python/control/robot.py -> DoosanRobot.move_home]
+  # 초기 홈 위치 (6개 관절 각도, 단위: 도/deg)
+  home_pose: [0.0, 0.0, 90.0, 0.0, 90.0, 0.0]
+
+  # [참조: src/doosan_python/control/robot.py -> DoosanRobot.move_j, move_l]
+  # 기본 이동 속도 (관절: deg/s, 직교: mm/s)
+  default_vel: 30.0
+
+  # [참조: src/doosan_python/control/robot.py -> DoosanRobot.move_j, move_l]
+  # 기본 이동 가속도 (관절: deg/s^2, 직교: mm/s^2)
+  default_acc: 60.0
+
+camera:
+  # [참조: src/doosan_python/models/camera.py -> CameraStreamer.__init__]
+  # 카메라 종류 ('realsense', 'webcam', 'mock' 등)
+  type: "realsense"
+
+  # 영상 해상도 가로 픽셀 (px)
+  width: 640
+
+  # 영상 해상도 세로 픽셀 (px)
+  height: 480
+
+  # 초당 프레임 수 (FPS)
+  fps: 30
+
+model:
+  # [참조: src/doosan_python/models/detector.py -> ObjectDetector.__init__]
+  # 딥러닝 가중치 파일 경로 (.pt, .onnx, .engine 등)
+  weights_path: "weights/best.pt"
+
+  # 객체 인식 신뢰도 임계값 (0.0 ~ 1.0)
+  confidence_threshold: 0.5
+
+  # [참조: src/doosan_python/main.py -> detector.infer(..., target_label=...)]
+  # 잡으려는 목표 타겟 클래스명
+  target_class: "target_box"
+
+transforms:
+  # [참조: src/doosan_python/algorithms/transforms.py -> cam_to_robot_base]
+  # 카메라 원점 기준 로봇 베이스 원점까지의 3D 평행 이동 벡터 [X, Y, Z] (단위: mm)
+  cam_to_base_translation: [300.0, 0.0, 500.0]
+
+  # [참조: src/doosan_python/algorithms/transforms.py -> cam_to_robot_base]
+  # 카메라 좌표계 회전 각도 오일러 각 [Rx, Ry, Rz] (단위: deg)
+  cam_to_base_rotation: [0.0, 0.0, 0.0]

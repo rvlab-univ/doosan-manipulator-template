@@ -1,0 +1,32 @@
+doosan-robotics:
+  # 공식 웹사이트 및 포털 (Official Websites & Portals)
+  homepage: https://www.doosanrobotics.com
+  homepage-ko: https://www.doosanrobotics.com/ko/
+  manual-center: https://manual.doosanrobotics.com
+  robot-lab: https://robotlab.doosanrobotics.com
+  dart-developers: https://developers.drdart.io
+  dart-store: https://store.drdart.io
+
+  # GitHub 공식 조직 및 저장소 (GitHub Repositories)
+  github-org: https://github.com/DoosanRobotics
+  github: https://github.com/DoosanRobotics/doosan-robot2
+  ros2-repo: https://github.com/DoosanRobotics/doosan-robot2
+  ros1-repo: https://github.com/DoosanRobotics/doosan-robot
+  api-drfl: https://github.com/DoosanRobotics/API-DRFL
+  isaac-driver: https://github.com/DoosanRobotics/doosan-robot-isaac-driver
+  ros2-zenoh: https://github.com/DoosanRobotics/doosan_robotics_ros2_zenoh
+
+  # 기술 문서 및 매뉴얼 (Technical Manuals & Docs)
+  ros2-manual: https://doosanrobotics.github.io/doosan-robotics-ros-manual/jazzy/index.html
+  ros-manual-hub: https://doosanrobotics.github.io/doosan-robotics-ros-manual
+  api-manual: https://doosanrobotics.github.io/doosan-robotics-api-manual
+
+# 관련 ROS 2 생태계 공식 사이트 (Related ROS 2 Ecosystem)
+ros2:
+  jazzy-docs: https://docs.ros.org/en/jazzy/
+  index: https://index.ros.org
+  discourse: https://discourse.ros.org
+
+moveit:
+  docs: https://moveit.picknik.ai
+  homepage: https://moveit.ros.org

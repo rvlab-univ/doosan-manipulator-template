@@ -1,0 +1,32 @@
+[project]
+name = "doosan-python"
+version = "0.1.0"
+description = "Doosan Robotics ROS 2 Python Research Template"
+readme = "README.md"
+authors = [
+    { name = "ahrism10M501", email = "ariofeem@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.24.0",
+    "pyyaml>=6.0",
+    "realsense-python",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+doosan-main = "doosan_python.main:main"
+doosan-jog = "doosan_python.interactive_jog:main"
+doosan-adjust = "doosan_python.adjust_joint:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+realsense-python = { git = "https://github.com/rvlab-univ/realsense-python.git" }
