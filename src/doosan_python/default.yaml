@@ -1,0 +1,23 @@
+# Doosan robot identity and ROS namespace.
+robot:
+  # ROS service namespace becomes /<name>, for example /dsr01/motion/move_joint.
+  name: "dsr01"
+  # Model argument passed to dsr_bringup2 (change to the robot in your lab).
+  model: "a0912"
+  # Controller addresses used by env.sh -real and env.sh -virtual.
+  real_host: "192.168.137.100"
+  virtual_host: "127.0.0.1"
+  port: 12345
+
+# Safe defaults shared by main, adjust, and interactive jog commands.
+motion:
+  velocity: 10.0             # Joint velocity, deg/s.
+  acceleration: 20.0         # Joint acceleration, deg/s^2.
+  max_relative_delta: 30.0   # Reject any one-step joint delta above this, deg.
+  service_timeout_sec: 5.0   # Maximum wait for Doosan ROS services, seconds.
+
+# Minimal model example. Replace MockPolicy.predict() with your model inference.
+mock_model:
+  joint_index: 6             # One-based joint number controlled by the example.
+  delta_deg: 10.0            # Alternates +10 and -10 degrees.
+  prediction_count: 2        # Two predictions make one round trip, then exit.

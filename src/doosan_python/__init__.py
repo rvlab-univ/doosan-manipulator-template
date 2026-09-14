@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from doosan-python!")
+"""Minimal Doosan ROS 2 Python research template."""

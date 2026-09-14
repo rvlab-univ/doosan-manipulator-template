@@ -1,94 +1,131 @@
-"""Type-safe configuration parser for pipeline settings."""
+"""Strict configuration loading for the robot examples."""
 
-from dataclasses import dataclass, field
-import os
+import math
+from dataclasses import dataclass, fields
+from importlib.resources import files
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any
+
 import yaml
 
-from doosan_python.utils.logger import get_logger
 
-logger = get_logger("config")
-
-
-@dataclass
+@dataclass(frozen=True)
 class RobotConfig:
-    """Robot connection and basic motion defaults."""
-    ip: str = "192.168.137.100"
+    name: str = "dsr01"
+    model: str = "a0912"
+    real_host: str = "192.168.137.100"
+    virtual_host: str = "127.0.0.1"
     port: int = 12345
-    service_prefix: str = "/dsr_controller2"
-    home_pose: List[float] = field(default_factory=lambda: [0.0, 0.0, 90.0, 0.0, 90.0, 0.0])  # deg (Joint angles)
-    default_vel: float = 30.0                                                                    # deg/s or mm/s
-    default_acc: float = 60.0                                                                    # deg/s^2 or mm/s^2
 
 
-@dataclass
-class CameraConfig:
-    """Vision capture parameters."""
-    type: str = "realsense"
-    width: int = 640
-    height: int = 480
-    fps: int = 30
+@dataclass(frozen=True)
+class MotionConfig:
+    velocity: float = 10.0
+    acceleration: float = 20.0
+    max_relative_delta: float = 30.0
+    service_timeout_sec: float = 5.0
 
 
-@dataclass
-class ModelConfig:
-    """Detection / AI model parameters."""
-    weights_path: str = "weights/best.pt"
-    confidence_threshold: float = 0.5
-    target_class: str = "target"
+@dataclass(frozen=True)
+class MockModelConfig:
+    joint_index: int = 6
+    delta_deg: float = 10.0
+    prediction_count: int = 2
 
 
-@dataclass
-class TransformConfig:
-    """Extrinsic calibration parameters (Camera -> Robot Base)."""
-    cam_to_base_translation: List[float] = field(default_factory=lambda: [300.0, 0.0, 500.0])  # mm
-    cam_to_base_rotation: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])         # [Rx, Ry, Rz] in deg
-
-
-@dataclass
+@dataclass(frozen=True)
 class AppConfig:
-    """Root configuration contract."""
-    robot: RobotConfig = field(default_factory=RobotConfig)
-    camera: CameraConfig = field(default_factory=CameraConfig)
-    model: ModelConfig = field(default_factory=ModelConfig)
-    transforms: TransformConfig = field(default_factory=TransformConfig)
+    robot: RobotConfig
+    motion: MotionConfig
+    mock_model: MockModelConfig
 
 
-def load_config(config_path: Optional[Union[str, Path]] = None) -> AppConfig:
-    """Load configuration from a YAML file, falling back to defaults if not found.
+def _section(cls: type, name: str, raw: Any):
+    if not isinstance(raw, dict):
+        raise TypeError(f"config section {name} must be a mapping")
+    allowed = {field.name for field in fields(cls)}
+    unknown = set(raw) - allowed
+    if unknown:
+        raise ValueError(f"unknown config key: {name}.{min(unknown)}")
+    return cls(**raw)
 
-    Args:
-        config_path: Path to YAML config file. If None or non-existent, default values are used.
 
-    Returns:
-        Populated AppConfig dataclass.
-    """
-    if config_path is None:
-        config_path = "configs/default.yaml"
+def _positive_number(value: Any, key: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{key} must be a positive number")
+    number = float(value)
+    if not math.isfinite(number) or number <= 0:
+        raise ValueError(f"{key} must be a positive number")
+    return number
 
-    path = Path(config_path)
-    if not path.exists():
-        logger.warning(f"Config file not found at '{path}'. Falling back to built-in default configuration.")
-        return AppConfig()
 
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            raw_data = yaml.safe_load(f) or {}
+def _validate(config: AppConfig) -> AppConfig:
+    for key, value in (
+        ("robot.name", config.robot.name),
+        ("robot.model", config.robot.model),
+        ("robot.real_host", config.robot.real_host),
+        ("robot.virtual_host", config.robot.virtual_host),
+    ):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{key} must be a non-empty string")
+    if (
+        isinstance(config.robot.port, bool)
+        or not isinstance(config.robot.port, int)
+        or not 1 <= config.robot.port <= 65535
+    ):
+        raise ValueError("robot.port must be between 1 and 65535")
 
-        robot_data = raw_data.get("robot", {})
-        camera_data = raw_data.get("camera", {})
-        model_data = raw_data.get("model", {})
-        transforms_data = raw_data.get("transforms", {})
+    _positive_number(config.motion.velocity, "motion.velocity")
+    _positive_number(config.motion.acceleration, "motion.acceleration")
+    limit = _positive_number(
+        config.motion.max_relative_delta, "motion.max_relative_delta"
+    )
+    _positive_number(config.motion.service_timeout_sec, "motion.service_timeout_sec")
 
-        cfg = AppConfig(
-            robot=RobotConfig(**{k: v for k, v in robot_data.items() if hasattr(RobotConfig, k)}),
-            camera=CameraConfig(**{k: v for k, v in camera_data.items() if hasattr(CameraConfig, k)}),
-            model=ModelConfig(**{k: v for k, v in model_data.items() if hasattr(ModelConfig, k)}),
-            transforms=TransformConfig(**{k: v for k, v in transforms_data.items() if hasattr(TransformConfig, k)}),
+    if (
+        isinstance(config.mock_model.joint_index, bool)
+        or not isinstance(config.mock_model.joint_index, int)
+        or not 1 <= config.mock_model.joint_index <= 6
+    ):
+        raise ValueError("mock_model.joint_index must be between 1 and 6")
+    delta = _positive_number(config.mock_model.delta_deg, "mock_model.delta_deg")
+    if delta > limit:
+        raise ValueError(
+            "mock_model.delta_deg must not exceed motion.max_relative_delta"
         )
-        logger.info(f"Loaded configuration successfully from '{path}'.")
-        return cfg
-    except Exception as e:
-        logger.error(f"Error reading configuration file '{path}': {e}. Using fallback defaults.")
-        return AppConfig()
+    if (
+        isinstance(config.mock_model.prediction_count, bool)
+        or not isinstance(config.mock_model.prediction_count, int)
+        or config.mock_model.prediction_count < 1
+    ):
+        raise ValueError("mock_model.prediction_count must be a positive integer")
+    return config
+
+
+def load_config(config_path: str | Path | None = None) -> AppConfig:
+    """Load and validate YAML; use the packaged default when no path is given."""
+    if config_path is None:
+        text = files("doosan_python").joinpath("default.yaml").read_text(encoding="utf-8")
+    else:
+        path = Path(config_path)
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        text = path.read_text(encoding="utf-8")
+
+    raw = yaml.safe_load(text) or {}
+    if not isinstance(raw, dict):
+        raise TypeError("config root must be a mapping")
+    allowed = {"robot", "motion", "mock_model"}
+    unknown = set(raw) - allowed
+    if unknown:
+        raise ValueError(f"unknown config key: {min(unknown)}")
+
+    return _validate(
+        AppConfig(
+            robot=_section(RobotConfig, "robot", raw.get("robot", {})),
+            motion=_section(MotionConfig, "motion", raw.get("motion", {})),
+            mock_model=_section(
+                MockModelConfig, "mock_model", raw.get("mock_model", {})
+            ),
+        )
+    )
