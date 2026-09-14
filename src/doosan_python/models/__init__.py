@@ -1,4 +1,3 @@
-from .detector import ObjectDetector
-from .camera import CameraStreamer
+from .policy import MockPolicy
 
-__all__ = ["ObjectDetector", "CameraStreamer"]
+__all__ = ["MockPolicy"]
